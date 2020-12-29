@@ -140,7 +140,7 @@ def start_listening(app):
 
 def start_listening_unix_socket(http_server):
     address = config.get_option("server.address")
-    file_name = os.path.expanduser(address[len(UNIX_SOCKET_PREFIX):])
+    file_name = os.path.expanduser(address[len(UNIX_SOCKET_PREFIX) :])
 
     unix_socket = tornado.netutil.bind_unix_socket(file_name)
     http_server.add_socket(unix_socket)
@@ -205,7 +205,7 @@ class Server(object):
         return Server._singleton
 
     def __init__(
-            self, ioloop: tornado.ioloop.IOLoop, script_path: str, command_line: str
+        self, ioloop: tornado.ioloop.IOLoop, script_path: str, command_line: str
     ):
         """Create the server. It won't be started yet."""
         if Server._singleton is not None:
@@ -464,7 +464,7 @@ Please report this bug at https://github.com/streamlit/streamlit/issues.
             populate_hash_if_needed(msg)
 
             if self._message_cache.has_message_reference(
-                    msg, session_info.session, session_info.report_run_count
+                msg, session_info.session, session_info.report_run_count
             ):
                 # This session has probably cached this message. Send
                 # a reference instead.
@@ -482,8 +482,8 @@ Please report this bug at https://github.com/streamlit/streamlit/issues.
         # If this was a `report_finished` message, we increment the
         # report_run_count for this session, and update the cache
         if (
-                msg.WhichOneof("type") == "report_finished"
-                and msg.report_finished == ForwardMsg.FINISHED_SUCCESSFULLY
+            msg.WhichOneof("type") == "report_finished"
+            and msg.report_finished == ForwardMsg.FINISHED_SUCCESSFULLY
         ):
             LOGGER.debug(
                 "Report finished successfully; "
@@ -560,7 +560,7 @@ Please report this bug at https://github.com/streamlit/streamlit/issues.
             )
 
             assert session.id not in self._session_info_by_id, (
-                    "session.id '%s' registered multiple times!" % session.id
+                "session.id '%s' registered multiple times!" % session.id
             )
 
         self._session_info_by_id[session.id] = SessionInfo(ws, session)

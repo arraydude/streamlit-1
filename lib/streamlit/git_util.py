@@ -37,9 +37,9 @@ class GitRepo:
     def is_valid(self) -> bool:
         """True if there's a git repo here, and git.version >= MIN_GIT_VERSION."""
         return (
-                self.repo is not None
-                and self.git_version is not None
-                and self.git_version >= MIN_GIT_VERSION
+            self.repo is not None
+            and self.git_version is not None
+            and self.git_version >= MIN_GIT_VERSION
         )
 
     @property
@@ -86,8 +86,8 @@ class GitRepo:
 
         for url in remote.urls:
             if (
-                    re.match(GITHUB_HTTP_URL, url) is not None
-                    or re.match(GITHUB_SSH_URL, url) is not None
+                re.match(GITHUB_HTTP_URL, url) is not None
+                or re.match(GITHUB_SSH_URL, url) is not None
             ):
                 return True
 

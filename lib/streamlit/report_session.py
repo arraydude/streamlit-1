@@ -240,8 +240,8 @@ class ReportSession(object):
             self._enqueue_new_report_message()
 
         elif (
-                event == ScriptRunnerEvent.SCRIPT_STOPPED_WITH_SUCCESS
-                or event == ScriptRunnerEvent.SCRIPT_STOPPED_WITH_COMPILE_ERROR
+            event == ScriptRunnerEvent.SCRIPT_STOPPED_WITH_SUCCESS
+            or event == ScriptRunnerEvent.SCRIPT_STOPPED_WITH_COMPILE_ERROR
         ):
 
             if self._state != ReportSessionState.SHUTDOWN_REQUESTED:
@@ -310,7 +310,7 @@ class ReportSession(object):
         msg = ForwardMsg()
         msg.session_state_changed.run_on_save = self._run_on_save
         msg.session_state_changed.report_is_running = (
-                self._state == ReportSessionState.REPORT_IS_RUNNING
+            self._state == ReportSessionState.REPORT_IS_RUNNING
         )
         self.enqueue(msg)
 
@@ -370,7 +370,7 @@ class ReportSession(object):
 
         imsg.session_state.run_on_save = self._run_on_save
         imsg.session_state.report_is_running = (
-                self._state == ReportSessionState.REPORT_IS_RUNNING
+            self._state == ReportSessionState.REPORT_IS_RUNNING
         )
 
         imsg.user_info.installation_id = Installation.instance().installation_id
@@ -414,8 +414,8 @@ class ReportSession(object):
             msg.git_info.untracked_files[:] = self._repo.untracked_files
             msg.git_info.uncommitted_files[:] = self._repo.get_uncommitted_files()
             msg.git_info.is_ahead = (
-                    not self._repo.is_head_detached
-                    and len(self._repo.get_ahead_commits()) > 0
+                not self._repo.is_head_detached
+                and len(self._repo.get_ahead_commits()) > 0
             )
         except:
             pass
@@ -447,8 +447,8 @@ class ReportSession(object):
             if client_state is not None:
                 has_query_string = client_state.query_string != ""
                 has_widget_states = (
-                        client_state.widget_states is not None
-                        and len(client_state.widget_states.widgets) > 0
+                    client_state.widget_states is not None
+                    and len(client_state.widget_states.widgets) > 0
                 )
                 has_client_state = has_query_string or has_widget_states
 
@@ -509,9 +509,9 @@ class ReportSession(object):
         This function should only be called on the main thread.
         """
         if (
-                self._state == ReportSessionState.SHUTDOWN_REQUESTED
-                or self._scriptrunner is not None
-                or not self._script_request_queue.has_request
+            self._state == ReportSessionState.SHUTDOWN_REQUESTED
+            or self._scriptrunner is not None
+            or not self._script_request_queue.has_request
         ):
             return
 
