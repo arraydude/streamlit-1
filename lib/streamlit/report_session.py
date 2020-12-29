@@ -54,30 +54,23 @@ class ReportSession(object):
     """
     Contains session data for a single "user" of an active report
     (that is, a connected browser tab).
-
     Each ReportSession has its own Report, root DeltaGenerator, ScriptRunner,
     and widget state.
-
     A ReportSession is attached to each thread involved in running its Report.
     """
 
     def __init__(self, ioloop, script_path, command_line, uploaded_file_manager):
         """Initialize the ReportSession.
-
         Parameters
         ----------
         ioloop : tornado.ioloop.IOLoop
             The Tornado IOLoop that we're running within.
-
         script_path : str
             Path of the Python file from which this report is generated.
-
         command_line : str
             Command line as input by the user.
-
         uploaded_file_manager : UploadedFileManager
             The server's UploadedFileManager.
-
         """
         # Each ReportSession has a unique string ID.
         self.id = str(uuid.uuid4())
@@ -109,24 +102,19 @@ class ReportSession(object):
 
     def flush_browser_queue(self):
         """Clear the report queue and return the messages it contained.
-
         The Server calls this periodically to deliver new messages
         to the browser connected to this report.
-
         Returns
         -------
         list[ForwardMsg]
             The messages that were removed from the queue and should
             be delivered to the browser.
-
         """
         return self._report.flush_browser_queue()
 
     def shutdown(self):
         """Shut down the ReportSession.
-
         It's an error to use a ReportSession after it's been shut down.
-
         """
         if self._state != ReportSessionState.SHUTDOWN_REQUESTED:
             LOGGER.debug("Shutting down (id=%s)", self.id)
@@ -147,15 +135,12 @@ class ReportSession(object):
 
     def enqueue(self, msg):
         """Enqueue a new ForwardMsg to our browser queue.
-
         This can be called on both the main thread and a ScriptRunner
         run thread.
-
         Parameters
         ----------
         msg : ForwardMsg
             The message to enqueue
-
         """
         if not config.get_option("client.displayEnabled"):
             return
@@ -177,11 +162,9 @@ class ReportSession(object):
 
     def enqueue_exception(self, e):
         """Enqueue an Exception message.
-
         Parameters
         ----------
         e : BaseException
-
         """
         # This does a few things:
         # 1) Clears the current report in the browser.
@@ -199,16 +182,13 @@ class ReportSession(object):
 
     def request_rerun(self, client_state=None):
         """Signal that we're interested in running the script.
-
         If the script is not already running, it will be started immediately.
         Otherwise, a rerun will be requested.
-
         Parameters
         ----------
         client_state : streamlit.proto.ClientState_pb2.ClientState | None
             The ClientState protobuf to run the script with, or None
             to use previous client state.
-
         """
         if client_state:
             rerun_data = RerunData(
@@ -232,21 +212,16 @@ class ReportSession(object):
 
     def _on_scriptrunner_event(self, event, exception=None, client_state=None):
         """Called when our ScriptRunner emits an event.
-
         This is *not* called on the main thread.
-
         Parameters
         ----------
         event : ScriptRunnerEvent
-
         exception : BaseException | None
             An exception thrown during compilation. Set only for the
             SCRIPT_STOPPED_WITH_COMPILE_ERROR event.
-
         client_state : streamlit.proto.ClientState_pb2.ClientState | None
             The ScriptRunner's final ClientState. Set only for the
             SHUTDOWN event.
-
         """
         LOGGER.debug("OnScriptRunnerEvent: %s", event)
 
@@ -265,8 +240,8 @@ class ReportSession(object):
             self._enqueue_new_report_message()
 
         elif (
-            event == ScriptRunnerEvent.SCRIPT_STOPPED_WITH_SUCCESS
-            or event == ScriptRunnerEvent.SCRIPT_STOPPED_WITH_COMPILE_ERROR
+                event == ScriptRunnerEvent.SCRIPT_STOPPED_WITH_SUCCESS
+                or event == ScriptRunnerEvent.SCRIPT_STOPPED_WITH_COMPILE_ERROR
         ):
 
             if self._state != ReportSessionState.SHUTDOWN_REQUESTED:
@@ -335,7 +310,7 @@ class ReportSession(object):
         msg = ForwardMsg()
         msg.session_state_changed.run_on_save = self._run_on_save
         msg.session_state_changed.report_is_running = (
-            self._state == ReportSessionState.REPORT_IS_RUNNING
+                self._state == ReportSessionState.REPORT_IS_RUNNING
         )
         self.enqueue(msg)
 
@@ -395,7 +370,7 @@ class ReportSession(object):
 
         imsg.session_state.run_on_save = self._run_on_save
         imsg.session_state.report_is_running = (
-            self._state == ReportSessionState.REPORT_IS_RUNNING
+                self._state == ReportSessionState.REPORT_IS_RUNNING
         )
 
         imsg.user_info.installation_id = Installation.instance().installation_id
@@ -413,19 +388,42 @@ class ReportSession(object):
 
     def _enqueue_report_finished_message(self, status):
         """Enqueue a report_finished ForwardMsg.
-
         Parameters
         ----------
         status : ReportFinishedStatus
-
         """
         msg = ForwardMsg()
         msg.report_finished = status
         self.enqueue(msg)
 
+    def handle_git_information(self):
+        msg = ForwardMsg()
+
+        try:
+            from streamlit.git_util import GitRepo
+
+            self._repo = GitRepo(self._report.script_path)
+
+            repo, branch, module = self._repo.get_repo_info()
+
+            msg.git_info.repository = repo
+            msg.git_info.branch = branch
+            msg.git_info.module = module
+
+            msg.git_info.is_head_detached = self._repo.is_head_detached
+            msg.git_info.untracked_files[:] = self._repo.untracked_files
+            msg.git_info.uncommitted_files[:] = self._repo.get_uncommitted_files()
+            msg.git_info.is_ahead = (
+                    not self._repo.is_head_detached
+                    and len(self._repo.get_ahead_commits()) > 0
+            )
+        except:
+            pass
+
+        self.enqueue(msg)
+
     def handle_rerun_script_request(self, client_state=None, is_preheat=False):
         """Tell the ScriptRunner to re-run its report.
-
         Parameters
         ----------
         client_state : streamlit.proto.ClientState_pb2.ClientState | None
@@ -435,7 +433,6 @@ class ReportSession(object):
             True if this ReportSession should run the script immediately, and
             then ignore the next rerun request if it matches the already-ran
             widget state.
-
         """
         if is_preheat:
             self._maybe_reuse_previous_run = True  # For next time.
@@ -450,8 +447,8 @@ class ReportSession(object):
             if client_state is not None:
                 has_query_string = client_state.query_string != ""
                 has_widget_states = (
-                    client_state.widget_states is not None
-                    and len(client_state.widget_states.widgets) > 0
+                        client_state.widget_states is not None
+                        and len(client_state.widget_states.widgets) > 0
                 )
                 has_client_state = has_query_string or has_widget_states
 
@@ -467,9 +464,7 @@ class ReportSession(object):
 
     def handle_clear_cache_request(self):
         """Clear this report's cache.
-
         Because this cache is global, it will be cleared for all users.
-
         """
         # Setting verbose=True causes clear_cache to print to stdout.
         # Since this command was initiated from the browser, the user
@@ -479,32 +474,25 @@ class ReportSession(object):
 
     def handle_set_run_on_save_request(self, new_value):
         """Change our run_on_save flag to the given value.
-
         The browser will be notified of the change.
-
         Parameters
         ----------
         new_value : bool
             New run_on_save value
-
         """
         self._run_on_save = new_value
         self._enqueue_session_state_changed_message()
 
     def _enqueue_script_request(self, request, data=None):
         """Enqueue a ScriptEvent into our ScriptEventQueue.
-
         If a script thread is not already running, one will be created
         to handle the event.
-
         Parameters
         ----------
         request : ScriptRequest
             The type of request.
-
         data : Any
             Data associated with the request, if any.
-
         """
         if self._state == ReportSessionState.SHUTDOWN_REQUESTED:
             LOGGER.warning("Discarding %s request after shutdown" % request)
@@ -515,18 +503,15 @@ class ReportSession(object):
 
     def _maybe_create_scriptrunner(self):
         """Create a new ScriptRunner if we have unprocessed script requests.
-
         This is called every time a ScriptRequest is enqueued, and also
         after a ScriptRunner shuts down, in case new requests were enqueued
         during its termination.
-
         This function should only be called on the main thread.
-
         """
         if (
-            self._state == ReportSessionState.SHUTDOWN_REQUESTED
-            or self._scriptrunner is not None
-            or not self._script_request_queue.has_request
+                self._state == ReportSessionState.SHUTDOWN_REQUESTED
+                or self._scriptrunner is not None
+                or not self._script_request_queue.has_request
         ):
             return
 
@@ -545,17 +530,14 @@ class ReportSession(object):
     @tornado.gen.coroutine
     def handle_save_request(self, ws):
         """Save serialized version of report deltas to the cloud.
-
         "Progress" ForwardMsgs will be sent to the client during the upload.
         These messages are sent "out of band" - that is, they don't get
         enqueued into the ReportQueue (because they're not part of the report).
         Instead, they're written directly to the report's WebSocket.
-
         Parameters
         ----------
         ws : _BrowserWebSocketHandler
             The report's websocket handler.
-
         """
 
         @tornado.gen.coroutine

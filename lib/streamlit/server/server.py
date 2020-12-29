@@ -63,14 +63,12 @@ if TYPE_CHECKING:
 
 LOGGER = get_logger(__name__)
 
-
 TORNADO_SETTINGS = {
     "compress_response": True,  # Gzip HTTP responses.
     "websocket_ping_interval": 20,  # Ping every 20s to keep WS alive.
     "websocket_ping_timeout": 30,  # Pings should be responded to within 30s.
     "websocket_max_message_size": MESSAGE_SIZE_LIMIT,  # Up the WS size limit.
 }
-
 
 # When server.port is not available it will look for the next available port
 # up to MAX_PORT_SEARCH_RETRIES.
@@ -83,7 +81,6 @@ UNIX_SOCKET_PREFIX = "unix://"
 
 class SessionInfo(object):
     """Type stored in our _session_info_by_id dict.
-
     For each ReportSession, the server tracks that session's
     report_run_count. This is used to track the age of messages in
     the ForwardMsgCache.
@@ -91,7 +88,6 @@ class SessionInfo(object):
 
     def __init__(self, ws, session):
         """Initialize a SessionInfo instance.
-
         Parameters
         ----------
         session : ReportSession
@@ -128,10 +124,8 @@ def server_address_is_unix_socket():
 
 def start_listening(app):
     """Makes the server start listening at the configured port.
-
     In case the port is already taken it tries listening to the next available
     port.  It will error after MAX_PORT_SEARCH_RETRIES attempts.
-
     """
 
     http_server = tornado.httpserver.HTTPServer(
@@ -146,7 +140,7 @@ def start_listening(app):
 
 def start_listening_unix_socket(http_server):
     address = config.get_option("server.address")
-    file_name = os.path.expanduser(address[len(UNIX_SOCKET_PREFIX) :])
+    file_name = os.path.expanduser(address[len(UNIX_SOCKET_PREFIX):])
 
     unix_socket = tornado.netutil.bind_unix_socket(file_name)
     http_server.add_socket(unix_socket)
@@ -195,7 +189,6 @@ def start_listening_tcp_socket(http_server):
 
 
 class Server(object):
-
     _singleton = None  # type: Optional[Server]
 
     @classmethod
@@ -212,7 +205,7 @@ class Server(object):
         return Server._singleton
 
     def __init__(
-        self, ioloop: tornado.ioloop.IOLoop, script_path: str, command_line: str
+            self, ioloop: tornado.ioloop.IOLoop, script_path: str, command_line: str
     ):
         """Create the server. It won't be started yet."""
         if Server._singleton is not None:
@@ -244,15 +237,12 @@ class Server(object):
 
     def on_files_updated(self, session_id):
         """Event handler for UploadedFileManager.on_file_added.
-
         When a file is uploaded by a user, schedule a re-run of the
         corresponding ReportSession.
-
         Parameters
         ----------
         file : File
             The file that was just uploaded.
-
         """
         session_info = self._get_session_info(session_id)
         if session_info is not None:
@@ -265,27 +255,22 @@ class Server(object):
     def _get_session_info(self, session_id):
         """Return the SessionInfo with the given id, or None if no such
         session exists.
-
         Parameters
         ----------
         session_id : str
-
         Returns
         -------
         SessionInfo or None
-
         """
         return self._session_info_by_id.get(session_id, None)
 
     def start(self, on_started):
         """Start the server.
-
         Parameters
         ----------
         on_started : callable
             A callback that will be called when the server's run-loop
             has started, and the server is ready to begin receiving clients.
-
         """
         if self._state != State.INITIAL:
             raise RuntimeError("Server has already been started")
@@ -308,11 +293,9 @@ class Server(object):
 
     def _create_app(self):
         """Create our tornado web app.
-
         Returns
         -------
         tornado.web.Application
-
         """
         base = config.get_option("server.baseUrlPath")
         routes = [
@@ -465,18 +448,15 @@ Please report this bug at https://github.com/streamlit/streamlit/issues.
 
     def _send_message(self, session_info, msg):
         """Send a message to a client.
-
         If the client is likely to have already cached the message, we may
         instead send a "reference" message that contains only the hash of the
         message.
-
         Parameters
         ----------
         session_info : SessionInfo
             The SessionInfo associated with websocket
         msg : ForwardMsg
             The message to send to the client
-
         """
         msg.metadata.cacheable = is_cacheable_msg(msg)
         msg_to_send = msg
@@ -484,9 +464,8 @@ Please report this bug at https://github.com/streamlit/streamlit/issues.
             populate_hash_if_needed(msg)
 
             if self._message_cache.has_message_reference(
-                msg, session_info.session, session_info.report_run_count
+                    msg, session_info.session, session_info.report_run_count
             ):
-
                 # This session has probably cached this message. Send
                 # a reference instead.
                 LOGGER.debug("Sending cached message ref (hash=%s)" % msg.hash)
@@ -503,8 +482,8 @@ Please report this bug at https://github.com/streamlit/streamlit/issues.
         # If this was a `report_finished` message, we increment the
         # report_run_count for this session, and update the cache
         if (
-            msg.WhichOneof("type") == "report_finished"
-            and msg.report_finished == ForwardMsg.FINISHED_SUCCESSFULLY
+                msg.WhichOneof("type") == "report_finished"
+                and msg.report_finished == ForwardMsg.FINISHED_SUCCESSFULLY
         ):
             LOGGER.debug(
                 "Report finished successfully; "
@@ -528,7 +507,6 @@ Please report this bug at https://github.com/streamlit/streamlit/issues.
     def _on_stopped(self):
         """Called when our runloop is exiting, to shut down the ioloop.
         This will end our process.
-
         (Tests can patch this method out, to prevent the test's ioloop
         from being shutdown.)
         """
@@ -536,7 +514,6 @@ Please report this bug at https://github.com/streamlit/streamlit/issues.
 
     def add_preheated_report_session(self):
         """Register a fake browser with the server and run the script.
-
         This is used to start running the user's script even before the first
         browser connects.
         """
@@ -545,18 +522,15 @@ Please report this bug at https://github.com/streamlit/streamlit/issues.
 
     def _create_or_reuse_report_session(self, ws):
         """Register a connected browser with the server.
-
         Parameters
         ----------
         ws : _BrowserWebSocketHandler or None
             The newly-connected websocket handler or None if preheated
             connection.
-
         Returns
         -------
         ReportSession
             The newly-created ReportSession for this browser connection.
-
         """
         if self._preheated_session_id is not None:
             assert len(self._session_info_by_id) == 1
@@ -586,7 +560,7 @@ Please report this bug at https://github.com/streamlit/streamlit/issues.
             )
 
             assert session.id not in self._session_info_by_id, (
-                "session.id '%s' registered multiple times!" % session.id
+                    "session.id '%s' registered multiple times!" % session.id
             )
 
         self._session_info_by_id[session.id] = SessionInfo(ws, session)
@@ -600,10 +574,8 @@ Please report this bug at https://github.com/streamlit/streamlit/issues.
 
     def _close_report_session(self, session_id):
         """Shutdown and remove a ReportSession.
-
         This function may be called multiple times for the same session,
         which is not an error. (Subsequent calls just no-op.)
-
         Parameters
         ----------
         session_id : str
@@ -647,10 +619,8 @@ class _BrowserWebSocketHandler(tornado.websocket.WebSocketHandler):
 
     def get_compression_options(self):
         """Enable WebSocket compression.
-
         Returning an empty dict enables websocket compression. Returning
         None disables it.
-
         (See the docstring in the parent class.)
         """
         if config.get_option("server.enableWebsocketCompression"):
@@ -674,6 +644,8 @@ class _BrowserWebSocketHandler(tornado.websocket.WebSocketHandler):
                 yield self._session.handle_save_request(self)
             elif msg_type == "rerun_script":
                 self._session.handle_rerun_script_request(msg.rerun_script)
+            elif msg_type == "load_git_info":
+                self._session.handle_git_information()
             elif msg_type == "clear_cache":
                 self._session.handle_clear_cache_request()
             elif msg_type == "set_run_on_save":

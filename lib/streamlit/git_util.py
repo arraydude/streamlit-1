@@ -23,10 +23,10 @@ class GitRepo:
         try:
             self.repo = git.Repo(path, search_parent_directories=True)
             self.git_version = self.repo.git.version_info
+
             if self.git_version >= MIN_GIT_VERSION:
                 git_root = self.repo.git.rev_parse("--show-toplevel")
                 self.module = os.path.relpath(path, git_root)
-
         except:
             # The git repo must be invalid for the following reasons:
             #  * No .git folder
@@ -37,22 +37,35 @@ class GitRepo:
     def is_valid(self) -> bool:
         """True if there's a git repo here, and git.version >= MIN_GIT_VERSION."""
         return (
-            self.repo is not None
-            and self.git_version is not None
-            and self.git_version >= MIN_GIT_VERSION
+                self.repo is not None
+                and self.git_version is not None
+                and self.git_version >= MIN_GIT_VERSION
         )
 
     @property
     def tracking_branch(self):
         if not self.is_valid():
             return None
+
+        if self.is_head_detached:
+            return None
+
         return self.repo.active_branch.tracking_branch()
+
+    @property
+    def untracked_files(self):
+        return self.repo.untracked_files
+
+    @property
+    def is_head_detached(self):
+        return self.repo.head.is_detached
 
     def get_tracking_branch_remote(self):
         if not self.is_valid():
             return None
 
         tracking_branch = self.tracking_branch
+
         if tracking_branch is None:
             return None
 
@@ -73,8 +86,8 @@ class GitRepo:
 
         for url in remote.urls:
             if (
-                re.match(GITHUB_HTTP_URL, url) is not None
-                or re.match(GITHUB_SSH_URL, url) is not None
+                    re.match(GITHUB_HTTP_URL, url) is not None
+                    or re.match(GITHUB_SSH_URL, url) is not None
             ):
                 return True
 
@@ -106,3 +119,21 @@ class GitRepo:
             return None
 
         return repo, branch, self.module
+
+    def get_uncommitted_files(self):
+        if not self.is_valid():
+            return None
+
+        return [item.a_path for item in self.repo.index.diff(None)]
+
+    def get_ahead_commits(self):
+        if not self.is_valid():
+            return None
+
+        try:
+            remote, branch_name = self.get_tracking_branch_remote()
+            remote_branch = "/".join([remote.name, branch_name])
+
+            return list(self.repo.iter_commits(f"{remote_branch}..{branch_name}"))
+        except:
+            return list()
