@@ -50,7 +50,7 @@
     "copy-to-clipboard": "^3.3.1",
     "cypress-circleci-reporter": "^0.1.2",
     "d3": "^5.16.0",
-    "d3-graphviz": "^2.6.1",
+    "d3-graphviz": "^3.1.0",
     "decamelize": "^4.0.0",
     "deck.gl": "^8.2.5",
     "dompurify": "^2.1.1",
